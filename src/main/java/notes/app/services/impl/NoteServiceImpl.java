@@ -2,7 +2,7 @@ package notes.app.services.impl;
 
 import lombok.RequiredArgsConstructor;
 import notes.app.models.Note;
-import notes.app.repository.NoteRepository;
+import notes.app.repositories.NoteRepository;
 import notes.app.services.NoteService;
 import org.springframework.stereotype.Service;
 
