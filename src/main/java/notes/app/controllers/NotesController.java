@@ -18,7 +18,7 @@ public class NotesController {
     }
 
     @PostMapping
-    public Note createNote(@RequestBody String content, @AuthenticationPrincipal UserDetails userDetails)  {
+    public Note createNote(@AuthenticationPrincipal UserDetails userDetails, @RequestBody String content)  {
         String username = userDetails.getUsername();
         System.out.println("USER DETAILS: " + username);
         return noteService.createNoteForUser(username, content);
