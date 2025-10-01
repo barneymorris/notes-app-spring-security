@@ -1,9 +1,12 @@
 package notes.app.security;
 
+import lombok.RequiredArgsConstructor;
+import notes.app.security.jwt.AuthEntryPointJwt;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,10 +27,23 @@ import static org.springframework.security.config.Customizer.withDefaults;
         securedEnabled = true,
         jsr250Enabled = true
 )
+@RequiredArgsConstructor
 public class SecurityConfig {
+    AuthEntryPointJwt authEntryPointJwt;
+
+    @Autowired
+    public SecurityConfig(AuthEntryPointJwt authEntryPointJwt) {
+        this.authEntryPointJwt = authEntryPointJwt;
+    }
+
     @Bean
-    AuthenticationManager authenticationManager() {
-        return new ProviderManager();
+    public AuthTokenFilter authenticationJwtTokenFilter() {
+        return new AuthTokenFilter();
+    }
+
+    @Bean
+    AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
@@ -37,10 +53,16 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http, CustomLoggingFilter customLoggingFilter) throws Exception {
-        http.authorizeHttpRequests((requests) -> requests.anyRequest().authenticated());
+        http.authorizeHttpRequests((requests) ->
+                requests
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/auth/public/**").permitAll()
+                        .anyRequest().authenticated()
+        );
         http.csrf(AbstractHttpConfigurer::disable);
         http.httpBasic(withDefaults());
         http.addFilterBefore(customLoggingFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
