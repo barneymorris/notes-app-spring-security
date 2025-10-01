@@ -12,6 +12,8 @@ import notes.app.security.request.LoginRequest;
 import notes.app.security.request.SignupRequest;
 import notes.app.security.response.LoginResponse;
 import notes.app.security.response.MessageResponse;
+import notes.app.security.response.UserInfoResponse;
+import notes.app.services.UserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -19,13 +21,11 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -43,6 +43,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final RoleRepository roleRepository;
+    private final UserService userService;
 
     @PostMapping("/public/signin")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
@@ -120,5 +121,30 @@ public class AuthController {
         userRepository.save(user);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<?> getUserDetails(@AuthenticationPrincipal UserDetails userDetails) {
+        User user = userService.findByUsername(userDetails.getUsername());
+
+        List<String> roles = userDetails.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .toList();
+
+        UserInfoResponse userInfoResponse = new UserInfoResponse(
+                user.getUserId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.isAccountNonLocked(),
+                user.isCredentialsNonExpired(),
+                user.isCredentialsNonExpired(),
+                user.isEnabled(),
+                user.getCredentialsExpiryDate(),
+                user.getAccountExpiryDate(),
+                user.isTwoFactorEnabled(),
+                roles
+        );
+
+        return ResponseEntity.ok(userInfoResponse);
     }
 }
