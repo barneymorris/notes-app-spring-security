@@ -147,4 +147,9 @@ public class AuthController {
 
         return ResponseEntity.ok(userInfoResponse);
     }
+
+    @GetMapping("/username")
+    public String currentUserName(@AuthenticationPrincipal UserDetails userDetails) {
+        return (userDetails != null) ? userDetails.getUsername() : null;
+    }
 }
